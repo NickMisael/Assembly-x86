@@ -64,15 +64,15 @@ section .text
      .end:
         ret
 
-    pow:
-      cmp rsi, 0
-      je .zero
-      cmp rsi, 1
-      je .um
-      jmp .exp      
-      
+    pow:                    ; routine power calculation
+      cmp rsi, 0            ; compare rsi with 0 
+      je .zero              ; if rsi == 0, jump to zero
+      cmp rsi, 1            ; compare rsi with 1
+      je .um                ; if rsi == 1, jump to one
+      jmp .exp              ; else jump to exp
+
       .zero:
-        mov rdi, 1
+        mov rax, 1
         ret
       
       .um:
@@ -80,91 +80,100 @@ section .text
         ret
       
       .exp:
-        push rcx
-        mov rcx, 2
-        mov rax, rdi
+        push rcx            ; save rcx value 
+        mov rcx, 2          ; mov 2 to rcx
+        mov rax, rdi        ; mov rdi to rax
         .loop:
-          mul rdi
-          cmp rcx, rsi
-          je .end
-          inc rcx
-          jmp .loop
+          mul rdi           ; multiply rax to rdi
+          cmp rcx, rsi      ; compare rsi with rcx
+          je .end           ; if rsi == rcx, jump to end
+          inc rcx           ; else, increment rcx
+          jmp .loop         ; jump to loop
         
       .end:
-        pop rcx
-        ret
+        pop rcx             ; get value of rcx
+        ret                 ; return
   
     isnum:
-      mov al, 0x30
+      mov al, 0x30          ; mov 0x30 to al
 
-      .loop:
-        cmp rdi, rax 
-        je .end     
-        cmp rax, 0x3a
-        je .false
-        inc rax
-        jmp .loop
-        
+      .loop:      
+        cmp rdi, rax        ; compare rdi with rax 
+        je .end             ; if rdi == rax, jump to end
+        cmp rax, 0x3a       ; compare rax with 0x3a
+        je .false           ; if rax == 0x3a, jump to false
+        inc rax             ; else, increment rax
+        jmp .loop           ; jump to loop
+
       .end:
-        mov rax, 1
+        mov rax, 1          ; mov true to rax 
         ret
   
       .false:
-        mov rax, 0
+        mov rax, 0          ; mov false to rax
         ret
 
-    asciiToDecimal:
-      xor r9, r9
-      call strlen
+    asciiToHex:
+      call strlen         ; calcula o tamanho da str
+      
+      xor r9, r9          ; r9 guarda o valor convertido em hexa
       mov r8, rax         ; r8 = tamanho da str  
-      xor rcx, rcx        ; rcx = ponteiro
-      push rdi
+      xor rcx, rcx        ;
+      
 
       .loop:
-      dec r8
-      pop rdi
-      mov rdx, [rdi+rcx]  ; rdx = um char 
-      xor eax, eax
-      mov al, dl
-      push rdi
-      push rax
-      xor rdi, rdi
-      mov rdi, rax
-      call isnum
-      cmp rax, 0
-      je .err
-      pop rax
-      pop rdi
-      sub eax, 0x30       ; rax = char  
-      push rdi
-      push rax
-      mov rdi, 10        ; passa o arg 1 de pow (base)
-      mov rsi, r8         ; passa o arg 2 de pow (potencia)
-      call pow
-      pop rdi
-      cmp r8, 1
-      jl .jmprdi
-      mul rdi
-      .jmprdi:
-      inc rcx
-      add r9, rax         ; r9 = numero em hexa
-      cmp r8, 0
-      je .end
-      jmp .loop
+        dec r8              ; decrementa o ponteiro
+        
+        mov rdx, [rdi+rcx]     ; rcx = ponteiro
+        xor eax, eax        ; garante que rax estara zerado
+        mov al, dl          ; copia apenas um byte para ax
+        
+        push rdi            ; save addr of str
+        push rax            ; salva o caracter na pilha
+        
+        xor rdi, rdi        ; garante que rdi estara zerado 
+        mov rdi, rax        ; passa o char como arg1, para verificar se eh um num    
+        call isnum          ; call isnum routine
+        
+        cmp rax, 0          ; compare if isnum returned error         
+        je .err             ; if yes, jump for err
+        
+        pop rax             ; else recover rax, rdi values
+        pop rdi             ; recover addr of str
 
-      .err:
-        pop rdi
-        pop rdi
-        mov rax, msgerror
+        sub eax, 0x30       ; get hex value (0x35 ==> 0x5)           
+        push rdi            ; push rdi, rax  
+        push rax            ;
+
+        mov rdi, 10         ; passa o arg 1 de pow (base)
+        mov rsi, r8         ; passa o arg 2 de pow (potencia)
+        call pow
+        
+        pop rdi             ; get base number in rdi
+        cmp r8, 1           ; compare if r8 == 1
+        jl .jmprdi          ; if r8 < 1 jump rdi
+        mul rdi             ; else multiply rax to rdi
+        
+        .jmprdi:            
+          inc rcx           ; increment rcx
+          add r9, rax       ; sum rax to r9, r9 == [rdi]
+          cmp r8, 0         ; compare if r8 == 0
+          je .end           ; if yes, jump to end
+          pop rdi
+          jmp .loop         ; else jump to loop
+
+      .err:       
+        pop rdi             ; recover rdi addr to input.txt content
+        mov rax, msgerror   ; set rax with error message
         ret
 
       .end:
-        pop rdi
-        mov rax, r9
+        pop rdi             ; recover rdi addr to input.txt content
+        mov rax, r9         ; rax = hexa value 
         ret      
 
     fatorial:
-      call asciiToDecimal
+      call asciiToHex
       cmp rax, msgerror
       jne .cont
       mov rdi, rax
@@ -228,10 +237,8 @@ section .text
 
       pop rdi
       call printUint
-      
 
       mov rdi, rdi
       
-
       call exit
         
